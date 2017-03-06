@@ -16,5 +16,22 @@ namespace SeasonManagement
         {
             InitializeComponent();
         }
+
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            dataGridView7.RowHeadersVisible = false;
+            dataGridView7.Rows.Add(10);
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Height = 590;
+            Width = 1000;
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            
+        }
     }
 }
