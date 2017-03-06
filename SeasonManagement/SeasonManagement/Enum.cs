@@ -53,5 +53,36 @@ namespace SeasonManagement
             /// </summary>
             Teacher,
         }
+
+        /// <summary>
+        /// 現在の編集状態を示す
+        /// </summary>
+        public enum EditState
+        {
+            /// <summary>
+            /// 
+            /// </summary>
+            First,
+            /// <summary>
+            /// 
+            /// </summary>
+            Second,
+            /// <summary>
+            /// 
+            /// </summary>
+            Third,
+            /// <summary>
+            /// 
+            /// </summary>
+            Forth,
+            /// <summary>
+            /// 
+            /// </summary>
+            Fifth,
+            /// <summary>
+            /// 
+            /// </summary>
+            Edit,
+        }
     }
 }
