@@ -1030,12 +1030,11 @@ namespace SeasonManagement
             using (var sr = new StreamReader(STUDENT))
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(List<string>));
-                var number = 1;
                 foreach (var item in ((List<string>)serializer.Deserialize(sr)).Where(w => w.CompareTo("") != 0))
                 {
                     var ss = item.Split(',');
-                    Student.Add(ss[0], new CStudent(number, ss[1]));
-                    number += 1;
+                    if (!Student.Any(a => a.Key.CompareTo(ss[0]) == 0))
+                        Student.Add(ss[0], new CStudent(Student.Count + 1, ss[1]));
                 }
             }
         }
@@ -1050,12 +1049,11 @@ namespace SeasonManagement
             if (!File.Exists(TEACHER)) return;
             using (var sr = new StreamReader(TEACHER))
             {
-                var number = 1;
                 XmlSerializer serializer = new XmlSerializer(typeof(List<string>));
                 foreach (var item in ((List<string>)serializer.Deserialize(sr)).Where(w => w.CompareTo("") != 0))
                 {
-                    Teacher.Add(item, new CTeacher(number));
-                    number += 1;
+                    if (!Teacher.Any(a => a.Key.CompareTo(item) == 0))
+                        Teacher.Add(item, new CTeacher(Teacher.Count + 1));
                 }
             }
         }

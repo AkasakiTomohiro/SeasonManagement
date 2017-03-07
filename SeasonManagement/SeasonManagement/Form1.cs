@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Printing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -128,6 +131,12 @@ namespace SeasonManagement
         /// 作業中のセルの値を保持
         /// </summary>
         string ClickCellStudent = "", ClickCellSubject = "";
+
+        /// <summary>
+        /// 印刷フラグ
+        /// </summary>
+        int STFlagPrint = -1;
+
         #endregion
 
         public Form1()
@@ -153,7 +162,6 @@ namespace SeasonManagement
             dgvPropertyInfo.SetValue(dataGridView4, true, null);
             dgvPropertyInfo.SetValue(dataGridView5, true, null);
             dgvPropertyInfo.SetValue(dataGridView6, true, null);
-            dgvPropertyInfo.SetValue(dataGridView7, true, null);
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -285,12 +293,26 @@ namespace SeasonManagement
             s += "上記の内容で登録しますか？";
             DialogResult result = MessageBox.Show(s, "質問", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button2);
             if (result != DialogResult.Yes) return;
+
             //開始日及び最終日を保存
             DB.SetFastEnd(dateTimePicker2.Value, dateTimePicker3.Value);
+
             //スケジュールを生成する
             DB.SetSchedule();
+
             //時間帯とブースを保存する
             DB.SaveSetting();
+
+            //生徒情報があれば参照する
+            DB.OpenStudent();
+            foreach (var student in DB.Student)
+            {
+                ListViewItem itemx = new ListViewItem();
+                itemx.Text = student.Key;
+                itemx.SubItems.Add(student.Value.SchoolYear);
+                listView1.Items.Add(itemx);
+            }
+
             button7.Visible = false;
             FastFlag = true;
             tabControl4.SelectedIndex = 3;
@@ -317,6 +339,16 @@ namespace SeasonManagement
                         DB.Student.Add(Item.Text, new CStudent(DB.Student.Count + 1, Item.SubItems[1].Text));
                     }
                     DB.SaveStudent();
+
+                    //講師ファイルがあれば読み込む
+                    DB.OpenTeacher();
+                    foreach (var teacher in DB.Teacher)
+                    {
+                        ListViewItem itemx = new ListViewItem();
+                        itemx.Text = teacher.Key;
+                        listView1.Items.Add(itemx);
+                    }
+
                     comboBox1.SelectedIndex = 1;
                     toolStripStatusLabel2.Text = "ステップ数　3/5";
                     break;
@@ -1603,13 +1635,10 @@ namespace SeasonManagement
             int tmp1 = (tmp + DB.Days) % 14;
             int count = (int)Math.Ceiling((double)(DB.Days + tmp) / 14);
             if (dataGridView5.Rows.Count != count * 10) dataGridView5.Rows.Add(count * 10);
-            if (dataGridView7.Rows.Count != count * 10) dataGridView7.Rows.Add(count * 10);
             for (int i = 0; i < 16; i++)
             {
                 dataGridView5.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 dataGridView5.Columns[i].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                dataGridView7.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                dataGridView7.Columns[i].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
             }
             int buf = 0;
             for (int i = 0; i < tmp; i++)
@@ -1617,7 +1646,6 @@ namespace SeasonManagement
                 for (int k = 0; k < 10; k++)
                 {
                     dataGridView5[i + 1, 0 + k].ReadOnly = true;
-                    dataGridView7[i + 1, 0 + k].ReadOnly = true;
                 }
             }
             for (int i = 14; i > tmp1; i--)
@@ -1625,7 +1653,6 @@ namespace SeasonManagement
                 for (int k = 0; k < 10; k++)
                 {
                     dataGridView5[i, 0 + k + (count - 1) * 10].ReadOnly = true;
-                    dataGridView7[i, 0 + k + (count - 1) * 10].ReadOnly = true;
                 }
             }
             DateTime buff = DB.FastEnd[0].AddDays(-1);
@@ -1635,15 +1662,9 @@ namespace SeasonManagement
                 {
                     dataGridView5[0, i + 1 + j * 10].Value = DB.GetTimePeriod(i);
                     dataGridView5[15, i + 1 + j * 10].Value = DB.GetTimePeriod(i);
-                    dataGridView7[0, i + 1 + j * 10].Value = DB.GetTimePeriod(i);
-                    dataGridView7[15, i + 1 + j * 10].Value = DB.GetTimePeriod(i);
                     if (dataGridView5[0, i + 1 + j * 10].Value.ToString().CompareTo("") == 0)
                     {
                         dataGridView5.Rows[i + 1 + j * 10].Visible = false;
-                    }
-                    if (dataGridView7[0, i + 1 + j * 10].Value.ToString().CompareTo("") == 0)
-                    {
-                        dataGridView7.Rows[i + 1 + j * 10].Visible = false;
                     }
                 }
                 for (int i = 0; i < 14; i++)
@@ -1652,8 +1673,6 @@ namespace SeasonManagement
                     {
                         dataGridView5[i + 1 + tmp, j * 10].Value = DB.GetDate2(buf);
                         dataGridView5[i + 1 + tmp, j * 10].ReadOnly = true;
-                        dataGridView7[i + 1 + tmp, j * 10].Value = DB.GetDate2(buf);
-                        dataGridView7[i + 1 + tmp, j * 10].ReadOnly = true;
                     }
                     for (int k = 0; k < 9; k++)
                     {
@@ -1674,7 +1693,6 @@ namespace SeasonManagement
                             }
                             checkCell1.ThreeState = true;
                             dataGridView5[i + 1 + tmp, j * 10 + k + 1] = checkCell1;
-                            dataGridView7[i + 1 + tmp, j * 10 + k + 1] = checkCell2;
                         }
                     }
                     buf++;
@@ -2355,17 +2373,6 @@ namespace SeasonManagement
                     checkListView(0);
                     toolStripStatusLabel1.Text = "現在編集中：生徒情報";
                     linkLabel8.Text = "TMS2より生成できるCSV(生徒情報)を参照する場合はこのリンクを選択してください";
-                    if (!FastFlag)
-                    {
-                        DB.OpenStudent();
-                        foreach (var student in DB.Student)
-                        {
-                            ListViewItem itemx = new ListViewItem();
-                            itemx.Text = student.Key;
-                            itemx.SubItems.Add(student.Value.SchoolYear);
-                            listView1.Items.Add(itemx);
-                        }
-                    }
                     break;
                 case STMode.Teacher:
                     foreach (var item in STC)
@@ -2379,16 +2386,6 @@ namespace SeasonManagement
                     checkListView(1);
                     toolStripStatusLabel1.Text = "現在編集中：講師情報";
                     linkLabel8.Text = "TMS2より生成できるCSV(講師情報)を参照する場合はこのリンクを選択してください";
-                    if (!FastFlag)
-                    {
-                        DB.OpenTeacher();
-                        foreach (var teacher in DB.Teacher)
-                        {
-                            ListViewItem itemx = new ListViewItem();
-                            itemx.Text = teacher.Key;
-                            listView1.Items.Add(itemx);
-                        }
-                    }
                     break;
             }
         }
@@ -2588,6 +2585,7 @@ namespace SeasonManagement
             NewKisetu(3);
         }
         #endregion
+
         #endregion
 
         #region 初期設定
@@ -2704,6 +2702,7 @@ namespace SeasonManagement
         #endregion
 
         #region 関数
+
         /// <summary>
         /// 学年を取得する
         /// </summary>
@@ -2780,10 +2779,376 @@ namespace SeasonManagement
             }
         }
 
+        #endregion
 
+        #region 印刷
 
+        //
+        private void ToolStripMenuItem17_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < DB.Student.Count + DB.Teacher.Count; i++)
+            {
+                STFlagPrint = i;
+                PanelPeint();
+                toolStripMenuItem16_Click(new object(), new EventArgs());
+            }
+            STFlagPrint = -1;
+            PanelPeint();
+        }
 
+        //印刷
+        private void toolStripMenuItem16_Click(object sender, EventArgs e)
+        {
+            switch (toolStripComboBox3.SelectedIndex)
+            {
+                case 0:
+                    printDocument1.DefaultPageSettings.Landscape = true;
+                    PrintSaportCheck(PaperKind.B4);
+                    break;
+                case 1:
+                    printDocument1.DefaultPageSettings.Landscape = false;
+                    PrintSaportCheck(PaperKind.A4);
+                    break;
+                case 2:
+                    printDocument1.DefaultPageSettings.Landscape = true;
+                    PrintSaportCheck(PaperKind.A4);
+                    break;
+            }
+            if (DB.Booth != 10)
+            {
+                printDocument1.DefaultPageSettings.Margins.Bottom = DB.Booth * 13000;
+            }
+            printDocument1.Print();
+        }
 
+        //プリンタがサポートしている用紙サイズを調べる
+        private void PrintSaportCheck(PaperKind kind)
+        {
+            foreach (PaperSize ps in printDocument1.PrinterSettings.PaperSizes)
+            {
+                if (ps.Kind == kind)
+                {
+                    printDocument1.DefaultPageSettings.PaperSize = ps;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void toolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch (toolStripComboBox3.SelectedIndex)
+            {
+                case 0:
+                    PanelPeint();
+                    break;
+                case 1:
+                case 2:
+                    toolStripComboBox2Add();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 生徒若しくは講師を登録する
+        /// </summary>
+        private void toolStripComboBox2Add()
+        {
+            toolStripComboBox2.Items.Clear();
+            toolStripComboBox2.Text = "";
+            if (toolStripComboBox1.SelectedIndex == 0)
+            {
+                toolStripComboBox2.Items.AddRange(DB.Student.Select(s => s.Key).ToArray());
+            }
+            else
+            {
+                toolStripComboBox2.Items.AddRange(DB.Teacher.Select(s => s.Key).ToArray());
+            }
+        }
+
+        /// <summary>
+        /// panel描画
+        /// </summary>
+        public void PanelPeint()
+        {
+            int width = 25;
+            WindowState = FormWindowState.Maximized;
+            int canvasWidth = 0, canvasHeight = 0;
+            int tmp = 0, count = 0;
+            switch (toolStripComboBox3.SelectedIndex)
+            {
+                case 0:
+                    for (int i = 0; i < 9; i++)
+                    {
+                        if (DB.GetKomaCheck(i))
+                        {
+                            canvasWidth = (i + 1) * 140;
+                        }
+                    }
+                    canvasHeight = DB.Booth * 90 + 30;
+                    break;
+                case 1:
+                    tmp = DB.FDWC(DB.FastEnd[0].DayOfWeek.ToString());
+                    count = (int)Math.Ceiling((double)(DB.Days + tmp) / 14);
+                    canvasWidth = 720;
+                    canvasHeight = count * width * 10 + 70;
+                    break;
+                case 2:
+                    tmp = DB.FDWC(DB.FastEnd[0].DayOfWeek.ToString());
+                    count = (int)Math.Ceiling((double)(DB.Days + tmp) / 14);
+                    canvasWidth = count * width * 10 + 70;
+                    canvasHeight = 720;
+                    break;
+            }
+            //描画先とするImageオブジェクトを作成する
+            Bitmap canvas = new Bitmap(canvasWidth, canvasHeight);
+            //ImageオブジェクトのGraphicsオブジェクトを作成する
+            Graphics g = Graphics.FromImage(canvas);
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+            //Brushオブジェクトの作成
+            switch (toolStripComboBox3.SelectedIndex)
+            {
+                case 0:
+                    g = PanelPeintJyugyou(g, canvasHeight, canvasWidth);
+                    break;
+                case 1:
+                    g = PanelPeintStudentTeacher(g, canvasHeight, canvasWidth, width);
+                    break;
+            }
+            //リソースを解放する
+            g.Dispose();
+            //PictureBox1に表示する
+            pictureBox1.Image = canvas;
+        }
+
+        /// <summary>
+        /// 授業表
+        /// </summary>
+        /// <param name="g">Graphicsオブジェクト</param>
+        /// <param name="canvasHeight">画像の高さ</param>
+        /// <param name="canvasWidth">画像の幅</param>
+        /// <returns></returns>
+        private Graphics PanelPeintJyugyou(Graphics g, int canvasHeight, int canvasWidth)
+        {
+            int flag = 0;
+            Pen p = new Pen(Color.Black, 1);
+            Font fnt = new Font("ＭＳ ゴシック", 15);
+            Font fnt1 = new Font("HGP明朝L", 10);
+            SolidBrush b = new SolidBrush(Color.LightYellow);
+            for (int i = 0; i < 9; i++)
+            {
+                if (DB.GetKomaCheck(i))
+                {
+                    g.FillRectangle(new SolidBrush(Color.White), 140 * i, 0, 140, 30);
+                    g.DrawRectangle(p, 140 * i, 0, 140, 30);
+                    g.DrawString(DB.GetTimePeriod(i), fnt, Brushes.Black, 5 + 140 * i, 7);
+                    for (int j = 0; j < DB.Booth; j++)
+                    {
+                        b = (j % 2 == 0) ? new SolidBrush(Color.LightYellow) : new SolidBrush(Color.White);
+                        g.FillRectangle(b, 140 * i, 90 * j + 30, 140, 90);
+                        g.DrawRectangle(p, 140 * i, 90 * j + 30, 140, 90);
+                        g.DrawLine(p, 140 * i, 90 * j + 30 + 65, 140 * (i + 1), 90 * j + 30 + 65);
+                        foreach (var subject in DB.AllTuition[toolStripComboBox1.SelectedItem.ToString()].TimeClass[i].NomalClass[j].Subject.Select((k, v) => new { k, v }))
+                        {
+                            g.DrawString(subject.k.Name, fnt1, Brushes.Black, 140 * i + 5, 90 * j + 30 + 7 + subject.v * 20);
+                            if (DB.Student.Any(a => a.Key.CompareTo(subject.k.Name) == 0))
+                            {
+                                flag = 1;
+                                string buf = DB.Student[subject.k.Name].SchoolYear;
+                                buf += " " + subject.k.Subject.Substring(0, 1);
+                                g.DrawString(buf, fnt1, Brushes.Black, 140 * i + 90, 90 * j + 30 + 7 + subject.v * 20);
+                            }
+                            else
+                            {
+                                g.DrawString("", fnt1, Brushes.Black, 140 * i + 90, 90 * j + 30 + 7 + subject.v * 20);
+                            }
+                        }
+                        if (flag == 1) g.DrawString(DB.AllTuition[toolStripComboBox1.SelectedItem.ToString()].TimeClass[i].NomalClass[j].Tname, fnt1, Brushes.Black, 140 * i + 5, 90 * j + 30 + 7 + 65);
+                        flag = 0;
+                    }
+                }
+            }
+            g.DrawLine(p, canvasWidth - 1, 0, canvasWidth - 1, canvasHeight - 1);
+            g.DrawLine(p, 0, canvasHeight - 1, canvasWidth - 1, canvasHeight - 1);
+            return g;
+        }
+
+        /// <summary>
+        /// 生徒及び講師、日程表
+        /// </summary>
+        /// <param name="g">Graphicsオブジェクト</param>
+        /// <param name="canvasHeight">画像の高さ</param>
+        /// <param name="canvasWidth">画像の幅</param>
+        /// <param name="width">表の幅</param>
+        /// <returns></returns>
+        private Graphics PanelPeintStudentTeacher(Graphics g, int canvasHeight, int canvasWidth, int width)
+        {
+
+            DateTime daybuf;
+            Pen p = new Pen(Color.Black, 1);
+            Font fnt = new Font("ＭＳ ゴシック", 15);
+            Font fnt2 = new Font("ＭＳ ゴシック", 9);
+
+            //生徒・講師配布情報
+            int tmp = DB.FDWC(DB.FastEnd[0].DayOfWeek.ToString());
+            int tmp4 = 0;
+            int count = (int)Math.Ceiling((double)(DB.Days + tmp) / 14);
+            int buff = 0;
+            string StudentNumber = "";
+            if (toolStripComboBox3.SelectedIndex == 1) StudentNumber = toolStripComboBox2.SelectedItem.ToString();
+            SolidBrush Do = new SolidBrush(Color.FromArgb(120, Color.LightBlue));
+            SolidBrush Ni = new SolidBrush(Color.FromArgb(120, Color.LightPink));
+            SolidBrush nomal = new SolidBrush(Color.White);
+            g.FillRectangle(new SolidBrush(Color.White), 0, 0, 719, 30);
+            g.DrawRectangle(p, 0, 0, 719, 30);
+            if (toolStripComboBox3.SelectedIndex == 1) g.DrawString("氏名：" + toolStripComboBox2.Text, fnt, Brushes.Black, 520, 7);
+            g.FillRectangle(new SolidBrush(Color.White), 0, 30, 80, 30);
+            g.DrawRectangle(p, 0, 30, 80, 30);
+            g.DrawString("時間帯", fnt, Brushes.Black, 5, 37);
+            string yasumi = "休" + Environment.NewLine + "校" + Environment.NewLine + "日";
+            for (int i = 0; i < 14; i++)
+            {
+                if ((i + 1) % 7 == 6)
+                {
+                    g.FillRectangle(new SolidBrush(Color.White), 40 * i + 80, 30, 60, 30);
+                    g.FillRectangle(Do, 40 * i + 80, 30, 60, 30);
+                }
+                else if ((i + 1) % 7 == 0)
+                {
+                    g.FillRectangle(new SolidBrush(Color.White), 40 * i + 80, 30, 60, 30);
+                    g.FillRectangle(Ni, 40 * i + 80, 30, 60, 30);
+                }
+                else
+                {
+                    g.FillRectangle(new SolidBrush(Color.White), 40 * i + 80, 30, 60, 30);
+                }
+                g.DrawRectangle(p, 40 * i + 80, 30, 60, 30);
+            }
+            string[] week = { "月", "火", "水", "木", "金", "土", "日" };
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 7; j++)
+                {
+                    g.DrawString(week[j], fnt, Brushes.Black, 40 * j + 85 + i * 280, 37);
+                }
+            }
+            g.FillRectangle(new SolidBrush(Color.White), 640, 30, 80, 30);
+            g.DrawRectangle(p, 640, 30, 79, 30);
+            g.DrawString("時間帯", fnt, Brushes.Black, 645, 37);
+            for (int j = 0; j < count; j++)
+            {
+                g.FillRectangle(new SolidBrush(Color.White), 0, 60 + width * 10 * j + j * 3, 80, width);
+                g.DrawRectangle(p, 0, 60 + width * 10 * j + j * 3, 80, width);
+                g.FillRectangle(new SolidBrush(Color.White), 640, 60 + width * 10 * j + j * 3, 80, width);
+                g.DrawRectangle(p, 640, 60 + width * 10 * j + j * 3, 79, width);
+                for (int i = 0; ; i++)
+                {
+                    if (i >= 9) break;
+                    if (DB.GetKomaCheck(i))
+                    {
+                        g.FillRectangle(new SolidBrush(Color.White), 0, 60 + width * (1 + i + 10 * j) + j * 3, 80, width);
+                        g.DrawRectangle(p, 0, 60 + width + width * i + width * 10 * j + j * 3, 80, width);
+                        g.DrawString(DB.GetTimePeriod(i), fnt2, Brushes.Black, 2, 95 + width * (i + 10 * j) + j * 3);
+                        g.FillRectangle(new SolidBrush(Color.White), 640, 60 + width * (1 + i + 10 * j) + j * 3, 80, width);
+                        g.DrawRectangle(p, 640, 60 + width + width * i + width * 10 * j + j * 3, 79, width);
+                        g.DrawString(DB.GetTimePeriod(i), fnt2, Brushes.Black, 642, 95 + width * (i + 10 * j) + j * 3);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                //2週間分のループ
+                for (int i = 0; i < 14; i++)
+                {
+                    if ((i + 1) % 7 == 6)
+                    {
+                        nomal = Do;
+                    }
+                    else if ((i + 1) % 7 == 0)
+                    {
+                        nomal = Ni;
+                    }
+                    else
+                    {
+                        nomal = new SolidBrush(Color.White);
+                    }
+                    g.FillRectangle(nomal, 80 + 40 * i, 60 + width * 10 * j + j * 3, 40, width);
+                    g.DrawRectangle(p, 80 + 40 * i, 60 + width * 10 * j + j * 3, 40, width);
+                    for (int k = 0; k < 9; k++)
+                    {
+                        g.FillRectangle(nomal, 80 + 40 * i, 60 + width * (1 + k + 10 * j) + j * 3, 40, width);
+                        g.DrawRectangle(p, 80 + 40 * i, 60 + width * (1 + k + 10 * j) + j * 3, 40, width);
+                    }
+                }
+                for (int ii = 0; ii + tmp < 14; ii++)
+                {
+                    if (buff == DB.Days) break;
+                    daybuf = DB.FastEnd[0].AddDays(buff);
+                    g.DrawString(string.Format("{0,2}/{1,2}", daybuf.Month, daybuf.Day), fnt2, Brushes.Black, 83 + 40 * (ii + tmp), 67 + width * 10 * j + j * 3);
+                    for (int k = 0; k < 9; k++)
+                    {
+                        if (tmp + ii < 14 && listBox1.Items.Count > buff - tmp4)
+                        {
+                            if (ii - tmp4 + j * 14 >= DB.Days) break;
+                            if (toolStripComboBox3.SelectedIndex == 1)
+                                g.DrawString(DB.Student[StudentNumber].InFlag[listBox1.Items[ii - tmp4 + j * 14].ToString()][k], fnt2, Brushes.Black, 92 + 40 * (ii + tmp), 67 + width * (1 + k + 10 * j) + j * 3);
+                        }
+                    }
+
+                    //休校日
+                    for (int k = 0; k < 9; k++)
+                    {
+                        if (DB.ScheduleFlag[listBox1.Items[ii - tmp4 + j * 14].ToString()][k].CompareTo("") == 0)
+                        {
+
+                            switch (DB.FastEnd[0].AddDays(ii - tmp4 + j * 14).DayOfWeek.ToString())
+                            {
+                                case "Saturday":
+                                    nomal = Do;
+                                    break;
+                                case "Sunday":
+                                    nomal = Ni;
+                                    break;
+                                default:
+                                    nomal = new SolidBrush(Color.White);
+                                    break;
+                            }
+                            g.FillRectangle(new SolidBrush(Color.White), 80 + 40 * (ii + tmp), 60 + width + width * 10 * j + j * 3, 40, width * 9);
+                            g.FillRectangle(nomal, 80 + 40 * (ii + tmp), 60 + width + width * 10 * j + j * 3, 40, width * 9);
+                            g.DrawRectangle(p, 80 + 40 * (ii + tmp), 60 + width + width * 10 * j + j * 3, 40, width * 9);
+                            g.DrawString(yasumi, fnt, Brushes.Black, 85 + 40 * (ii + tmp), 60 + width * 4 + width * 10 * j + j * 3);
+                            break;
+                        }
+                    }
+                    buff++;
+                }
+                if (j == 0)
+                {
+                    tmp4 = tmp;
+                    tmp = 0;
+                }
+            }
+            return g;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void toolStripComboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (toolStripComboBox3.SelectedIndex != 0 && toolStripComboBox2.SelectedIndex != -1)
+            {
+                PanelPeint();
+            }
+        }
 
         #endregion
 
