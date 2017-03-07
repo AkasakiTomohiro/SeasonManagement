@@ -14,7 +14,7 @@ using static SeasonManagement.Enum;
 
 namespace SeasonManagement
 {
-    class Data
+    public class Data
     {
         #region 定数
         /// <summary>

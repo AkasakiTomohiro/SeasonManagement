@@ -9,7 +9,7 @@ using static SeasonManagement.Enum;
 
 namespace SeasonManagement
 {
-    class Class
+    public class Class
     {
         /// <summary>
         /// 人

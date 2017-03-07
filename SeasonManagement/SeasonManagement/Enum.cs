@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SeasonManagement
 {
-    class Enum
+    public class Enum
     {
         /// <summary>
         /// 教科

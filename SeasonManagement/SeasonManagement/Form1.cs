@@ -1322,12 +1322,104 @@ namespace SeasonManagement
         }
 
         #endregion
-        
+
         #endregion
 
         #endregion
 
         #region 日程表
+
+        //日程表の更新
+        public void DBUpdate()
+        {
+            int tmp = DB.FDWC(DB.FastEnd[0].DayOfWeek.ToString());
+            int count = (int)Math.Ceiling((double)(DB.Days + tmp) / 14);
+            int tmp2 = 0, buf = 0;
+            for (int jj = 0; jj < count; jj++)
+            {
+                for (int ii = 0; ii < 14; ii++)
+                {
+                    for (int k = 0; k < 9; k++)
+                    {
+                        if (tmp + ii < 14 && DB.Days > buf - tmp2)
+                        {
+                            if (ii - tmp2 + jj * 14 > DB.Days) break;
+                            dataGridView5[ii + 1 + tmp, jj * 10 + k + 1].Value = DB.ScheduleFlag[listBox1.Items[ii - tmp2 + jj * 14].ToString()][k];
+                        }
+                    }
+                    buf++;
+                }
+                if (jj == 0)
+                {
+                    tmp2 = tmp;
+                    tmp = 0;
+                }
+            }
+        }
+
+        #region DataGridView5
+        //
+        private void dataGridView5_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                if (dataGridView5[e.ColumnIndex, e.RowIndex].GetType().Equals(typeof(DataGridViewCheckBoxCell)))
+                {
+                    DB.ScheduleFlag[dataGridView5[e.ColumnIndex, e.RowIndex / 10 * 10].Value.ToString()][e.RowIndex % 10 - 1] = dataGridView5[e.ColumnIndex, e.RowIndex].Value.ToString();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void dataGridView5_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData.Equals(Keys.Enter))
+            {
+                for (int i = 0; i < dataGridView5.GetCellCount(DataGridViewElementStates.Selected); i++)
+                {
+                    if (dataGridView5[dataGridView5.SelectedCells[i].ColumnIndex, dataGridView5.SelectedCells[i].RowIndex].Value != null)
+                    {
+                        if (dataGridView5[dataGridView5.SelectedCells[i].ColumnIndex, dataGridView5.SelectedCells[i].RowIndex].Value.ToString() == "True")
+                        {
+                            dataGridView5[dataGridView5.SelectedCells[i].ColumnIndex, dataGridView5.SelectedCells[i].RowIndex].Value = "False";
+                        }
+                        else if (dataGridView5[dataGridView5.SelectedCells[i].ColumnIndex, dataGridView5.SelectedCells[i].RowIndex].Value.ToString() == "False")
+                        {
+                            dataGridView5[dataGridView5.SelectedCells[i].ColumnIndex, dataGridView5.SelectedCells[i].RowIndex].Value = "True";
+                        }
+                        dataGridView3_CellValueChanged(new object(), new DataGridViewCellEventArgs(dataGridView5.SelectedCells[i].ColumnIndex, dataGridView5.SelectedCells[i].RowIndex));
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void dataGridView5_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.Cancel = false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void dataGridView5_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            if (dataGridView5.IsCurrentCellDirty)
+            {
+                dataGridView5.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+        #endregion
 
         #endregion
 
