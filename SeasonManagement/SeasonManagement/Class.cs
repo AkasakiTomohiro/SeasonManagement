@@ -520,9 +520,9 @@ namespace SeasonManagement
         /// </summary>
         public class CNewKomaSet
         {
-            public TextBox Text;
+            TextBox Text;
             Label Label;
-            public ComboBox Combo;
+            ComboBox Combo;
 
             /// <summary>
             /// 
@@ -541,7 +541,7 @@ namespace SeasonManagement
             /// テキストボックスにテキストを格納する
             /// </summary>
             /// <param name="text"></param>
-            public void SetText(string text)
+            public void setText(string text)
             {
                 Text.Text = text;
             }
@@ -550,7 +550,7 @@ namespace SeasonManagement
             /// コンボボックスにテキストを格納する
             /// </summary>
             /// <param name="text"></param>
-            public void SetCombo(string text)
+            public void setCombo(string text)
             {
                 Combo.Text = text;
             }
@@ -559,7 +559,7 @@ namespace SeasonManagement
             /// ラベルにテキストを格納する
             /// </summary>
             /// <param name="text"></param>
-            public void SetLabel(string text)
+            public void setLabel(string text)
             {
                 Label.Text = text;
             }
@@ -568,7 +568,7 @@ namespace SeasonManagement
             /// テキストボックスのテキストを取得する
             /// </summary>
             /// <returns></returns>
-            public string GetText()
+            public string getText()
             {
                 return Text.Text;
             }
@@ -577,7 +577,7 @@ namespace SeasonManagement
             /// コンボボックスのテキストを取得する
             /// </summary>
             /// <returns></returns>
-            public string GetCombo()
+            public string getCombo()
             {
                 return Combo.Text;
             }
@@ -586,7 +586,7 @@ namespace SeasonManagement
             /// ラベルのテキスト取得する
             /// </summary>
             /// <returns></returns>
-            public string GetLabel()
+            public string getLabel()
             {
                 return Label.Text;
             }
@@ -595,7 +595,7 @@ namespace SeasonManagement
             /// コンボボックスの状態取得
             /// </summary>
             /// <returns></returns>
-            public bool GetComboEnabled()
+            public bool getComboEnabled()
             {
                 return Combo.Enabled;
             }
@@ -605,7 +605,7 @@ namespace SeasonManagement
             /// </summary>
             /// <param name="str"></param>
             /// <returns></returns>
-            private bool TimeCheck()
+            private bool timecheck()
             {
                 DateTime dt = new DateTime(0);
                 if (DateTime.TryParse(Text.Text, out dt))
@@ -619,9 +619,9 @@ namespace SeasonManagement
             /// 入力が正しいかを確認する
             /// </summary>
             /// <returns></returns>
-            public bool Check()
+            public bool check()
             {
-                if (TimeCheck())
+                if (timecheck())
                 {
                     Combo.Enabled = true;
                     Text.ForeColor = Color.Black;
