@@ -111,6 +111,8 @@ namespace SeasonManagement
                 var d = DayFlag.Aggregate("", (n, next) => $"{n},{next.Key},{next.Value.Aggregate("", (nn, nnext) => $"{nn},{nnext}")}");
                 return $"{Times.Save()},{SchoolYear},{ManagementNumber},{Environment.NewLine}{d}";
             }
+
+
         }
 
         /// <summary>
@@ -318,14 +320,12 @@ namespace SeasonManagement
             /// <returns></returns>
             public string GetInfo()
             {
-                string s = "講師: " + TName + ", 生徒: " + SName + ", 教科: " + Subject + Environment.NewLine;
+                string s = $"講師: {TName}, 生徒: {SName}, 教科: {Subject}{Environment.NewLine}";
                 for (int i = 0; i < List.Count; i += 2)
                 {
-                    s += List[i];
-                    if (i != List.Count - 2) s += ",";
+                    s = $"{s}{List[i]}{(i != List.Count - 2 ? "," : "")}";
                 }
-                s += Environment.NewLine;
-                return s;
+                return $"{s}{Environment.NewLine}";
             }
 
             /// <summary>

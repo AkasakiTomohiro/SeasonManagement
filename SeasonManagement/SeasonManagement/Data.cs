@@ -100,12 +100,14 @@ namespace SeasonManagement
 
         public Data()
         {
+            //定数の設定
             ITTOPROJECT = $@"{ Environment.GetFolderPath(Environment.SpecialFolder.Personal)}\ITTOProject";
             MYDOCUMENT = $@"{ITTOPROJECT}\SeasonManagement";
             STUDENT = $@"{MYDOCUMENT}\Student.ini";
             TEACHER = $@"{MYDOCUMENT}\Teacher.ini";
             NOMAL = $@"{MYDOCUMENT}\NomalTuition.ini";
             SETTING = $@"{MYDOCUMENT}\ClassTimeAndBooth.ini";
+            //変数の初期化
             Teacher = new Dictionary<string, CTeacher>();
             Student = new Dictionary<string, CStudent>();
             Organization = new Dictionary<string, COrganization>();
@@ -948,7 +950,70 @@ namespace SeasonManagement
         {
             if (!Directory.Exists(ITTOPROJECT)) Directory.CreateDirectory(ITTOPROJECT);
             if (!Directory.Exists(MYDOCUMENT)) Directory.CreateDirectory(MYDOCUMENT);
-
+            using (var sw = new StreamWriter(filename))
+            {
+                sw.WriteLine("正式な季節講習データであるかのチェック用文字列");
+                //開始日,終了日,ブース数
+                sw.WriteLine(FastEnd[0] + "," + FastEnd[1] + "," + Booth);
+                //1コマ目,時間,2コマ目,時間,3コマ目,時間,4コマ目,時間,5コマ目,時間,6コマ目,時間,7コマ目,時間,8コマ目,時間,9コマ目,時間
+                for (int i = 0; i < 9; i++)
+                {
+                    sw.Write(GetKoma(i, 0) + "," + GetKoma(i, 1));
+                    if (i != 8) sw.Write(",");
+                }
+                sw.Write(Environment.NewLine);
+                //通常授業情報
+                for (int l = 0; l < 7; l++)
+                {
+                    for (int i = 0; i < 9; i++)
+                    {
+                        for (int j = 0; j < Booth; j++)
+                        {
+                            for (int k = 0; k < 3; k++)
+                            {
+                                sw.Write(NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[k].Name + ",");
+                                sw.Write(NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[k].Subject + ",");
+                            }
+                            sw.Write(NomalAllTuition[l].TimeClass[i].NomalClass[j].Weighting + ",");
+                            sw.Write(NomalAllTuition[l].TimeClass[i].NomalClass[j].Tname);
+                            if (j != Booth - 1) sw.Write(",");
+                        }
+                        if (i != 8) sw.Write(",");
+                    }
+                    sw.Write(Environment.NewLine);
+                }
+                sw.WriteLine(NomalAllTuition.Aggregate("", (n, next) => $"{n}{next.Save()}{Environment.NewLine}"));
+                //生徒保存
+                sw.WriteLine(Student.Count);
+                foreach (var student in Student)
+                {
+                    sw.WriteLine($"{student.Key}{student.Value.Save()}");
+                }
+                //講師の保存
+                sw.WriteLine(Teacher.Count());
+                foreach (var teacher in Teacher)
+                {
+                    sw.WriteLine($"{teacher.Key}{teacher.Value.Save()}");
+                }
+                //団授業の保存
+                sw.WriteLine(Organization.Count());
+                foreach (var organization in Organization)
+                {
+                    sw.WriteLine($"{organization.Key}{organization.Value.Save()}");
+                }
+                //季節講習授業情報 
+                sw.WriteLine(AllTuition.Aggregate("", (n, next) => $"{n}{next.Value.Save()}{Environment.NewLine}"));
+                //日程表
+                foreach (var schedule in ScheduleFlag.Values.Select((k, v) => new { k, v }))
+                {
+                    for (var j = 0; j < 9; j++)
+                    {
+                        sw.Write($"{schedule.k[j]}{(j != 8 ? "," : "")}");
+                    }
+                    if (schedule.v != Days - 1) sw.Write(",");
+                }
+                sw.Write(Environment.NewLine);
+            }
         }
 
         /// <summary>
@@ -991,7 +1056,7 @@ namespace SeasonManagement
             using (var sw = new StreamWriter(NOMAL))
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(List<string>));
-                serializer.Serialize(sw, NomalAllTuition.Select(s=>s.Save()).ToList());
+                serializer.Serialize(sw, NomalAllTuition.Select(s => s.Save()).ToList());
             }
         }
 
