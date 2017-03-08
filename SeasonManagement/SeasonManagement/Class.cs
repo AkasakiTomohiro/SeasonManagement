@@ -388,6 +388,26 @@ namespace SeasonManagement
                 Subject = sub;
                 TFlag = 0;
             }
+
+            /// <summary>
+            /// 保存用
+            /// </summary>
+            /// <returns></returns>
+            public string Save()
+            {
+                return $"{Subject.Aggregate("", (n, next) => $"{n}{next.Name},{next.Subject},")}{Weighting},{Tname}";
+            }
+
+            /// <summary>
+            /// 生徒及び教科を追加
+            /// 1回の呼び出しで3回追加を行う
+            /// </summary>
+            public void AddSubject()
+            {
+                Subject.Add(new CSubject());
+                Subject.Add(new CSubject());
+                Subject.Add(new CSubject());
+            }
         }
 
         /// <summary>
@@ -399,6 +419,7 @@ namespace SeasonManagement
             /// 一つの時間帯
             /// </summary>
             public List<CNomalClass> NomalClass { get; }
+
             /// <summary>
             /// あるコマに入れる生徒及び講師
             /// </summary>
@@ -408,6 +429,15 @@ namespace SeasonManagement
             {
                 NomalClass = new List<CNomalClass>();
                 TimeFlag = new CTimeFlag();
+            }
+
+            /// <summary>
+            /// 保存用
+            /// </summary>
+            /// <returns></returns>
+            public string Save()
+            {
+                return NomalClass.Select((k, v) => new { k, v }).Aggregate("", (n, next) => $"{n}{next.k.Save()}{(next.v != NomalClass.Count ? "," : "")}");
             }
         }
 
@@ -474,6 +504,15 @@ namespace SeasonManagement
                 we[0] = we[3] - we[1];
                 we[1] -= we[2];
                 return we;
+            }
+
+            /// <summary>
+            /// 保存用
+            /// </summary>
+            /// <returns></returns>
+            public string Save()
+            {
+                return TimeClass.Select((k, v) => new { k, v }).Aggregate("", (n, next) => $"{n}{next.k.Save()}");
             }
         }
 

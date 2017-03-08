@@ -187,6 +187,16 @@ namespace SeasonManagement
             STC.Add(new CSTC(textBox10, comboBox21));
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Height = 590;
+            Width = 1000;
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+
+        }
 
         #region 情報
         private void dateTimePicker2_ValueChanged(object sender, EventArgs e)
@@ -339,7 +349,7 @@ namespace SeasonManagement
                         DB.Student.Add(Item.Text, new CStudent(DB.Student.Count + 1, Item.SubItems[1].Text));
                     }
                     DB.SaveStudent();
-
+                    listBox2.Items.AddRange(DB.Student.Select(s => s.Key).ToArray());
                     //講師ファイルがあれば読み込む
                     DB.OpenTeacher();
                     foreach (var teacher in DB.Teacher)
@@ -359,6 +369,7 @@ namespace SeasonManagement
                         DB.Teacher.Add(Item.Text, new CTeacher(DB.Teacher.Count + 1));
                     }
                     DB.SaveTeacher();
+                    listBox2.Items.AddRange(DB.Teacher.Select(s => s.Key).ToArray());
                     FastFlag = true;
                     tabControl5.SelectedIndex = 1;
                     FastFlag = false;
@@ -405,6 +416,8 @@ namespace SeasonManagement
         {
             DialogResult result = MessageBox.Show("登録しますか？", "質問", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button2);
             if (result != DialogResult.Yes) return;
+            //通常授業を保存する
+            DB.SaveNomal();
             DB.Form1ToTuitionSend();
             New();
             dateTimePicker1.Visible = true;
@@ -436,7 +449,7 @@ namespace SeasonManagement
                     {
                         if (tmp + ii >= 14 || DB.Days <= buf - tmp2) continue;
                         if (ii - tmp2 + jj * 14 > DB.Days) break;
-                        dataGridView5[ii + 1 + tmp, jj * 10 + k + 1].Value = DB.ScheduleFlag[DB.GetDay(ii - tmp2 + jj * 14)][k];
+                        dataGridView5[ii + 1 + tmp, jj * 10 + k + 1].Value = DB.ScheduleFlag[DB.GetDate2(ii - tmp2 + jj * 14)][k];
                     }
                     buf++;
                 }
@@ -1678,12 +1691,6 @@ namespace SeasonManagement
                     {
                         if (DB.Days > buf && tmp + i < 14)
                         {
-                            DataGridViewCheckBoxCell checkCell2 = new DataGridViewCheckBoxCell();
-                            {
-                                checkCell2.TrueValue = "True";
-                                checkCell2.FalseValue = "False";
-                                checkCell2.ValueType = typeof(string);
-                            }
                             DataGridViewCheckBoxCell checkCell1 = new DataGridViewCheckBoxCell();
                             {
                                 checkCell1.TrueValue = "True";

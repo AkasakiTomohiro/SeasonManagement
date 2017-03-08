@@ -603,7 +603,7 @@ namespace SeasonManagement
         {
             for (var i = 0; i < Days; i++)
             {
-                var s = GetDay(i);
+                var s = GetDate2(i);
                 ScheduleFlag.Add(s, new string[] { "False", "False", "False", "False", "False", "False", "False", "False", "False" });
                 if (FastEnd[0].AddDays(i).DayOfWeek.ToString().CompareTo("Sunday") != 0) continue;
                 for (var k = 0; k < 9; k++) ScheduleFlag[s][k] = "";
@@ -948,6 +948,7 @@ namespace SeasonManagement
         {
             if (!Directory.Exists(ITTOPROJECT)) Directory.CreateDirectory(ITTOPROJECT);
             if (!Directory.Exists(MYDOCUMENT)) Directory.CreateDirectory(MYDOCUMENT);
+
         }
 
         /// <summary>
@@ -987,6 +988,11 @@ namespace SeasonManagement
         {
             if (!Directory.Exists(ITTOPROJECT)) Directory.CreateDirectory(ITTOPROJECT);
             if (!Directory.Exists(MYDOCUMENT)) Directory.CreateDirectory(MYDOCUMENT);
+            using (var sw = new StreamWriter(NOMAL))
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(List<string>));
+                serializer.Serialize(sw, NomalAllTuition.Select(s=>s.Save()).ToList());
+            }
         }
 
         /// <summary>
@@ -1017,6 +1023,7 @@ namespace SeasonManagement
         {
             if (!Directory.Exists(ITTOPROJECT)) Directory.CreateDirectory(ITTOPROJECT);
             if (!Directory.Exists(MYDOCUMENT)) Directory.CreateDirectory(MYDOCUMENT);
+
         }
 
         /// <summary>
@@ -1065,6 +1072,35 @@ namespace SeasonManagement
         {
             if (!Directory.Exists(ITTOPROJECT)) Directory.CreateDirectory(ITTOPROJECT);
             if (!Directory.Exists(MYDOCUMENT)) Directory.CreateDirectory(MYDOCUMENT);
+            if (!File.Exists(NOMAL)) return;
+            using (var sr = new StreamReader(NOMAL))
+            {
+                int l = 0;
+                string[] ss;
+                XmlSerializer serializer = new XmlSerializer(typeof(List<string>));
+                foreach (var item in ((List<string>)serializer.Deserialize(sr)).Where(w => w.CompareTo("") != 0))
+                {
+                    ss = item.Split(new char[] { ',' });
+                    NomalAllTuition.Add(new CTuition());
+                    for (int i = 0; i < 9; i++)
+                    {
+                        NomalAllTuition[l].TimeClass.Add(new CTimeClass());
+                        for (int j = 0; j < Booth; j++)
+                        {
+                            NomalAllTuition[l].TimeClass[i].NomalClass.Add(new CNomalClass());
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[0].Name = ss[8 * (Booth * i + j)];
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[0].Subject = ss[8 * (Booth * i + j) + 1];
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[1].Name = ss[8 * (Booth * i + j) + 2];
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[1].Subject = ss[8 * (Booth * i + j) + 3];
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[2].Name = ss[8 * (Booth * i + j) + 4];
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Subject[2].Subject = ss[8 * (Booth * i + j) + 5];
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Weighting = Convert.ToInt32(ss[8 * (Booth * i + j) + 6]);
+                            NomalAllTuition[l].TimeClass[i].NomalClass[j].Tname = ss[8 * (Booth * i + j) + 7];
+                        }
+                    }
+                    l++;
+                }
+            }
         }
 
         /// <summary>
